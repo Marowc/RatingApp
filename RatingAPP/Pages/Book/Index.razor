@@ -1,0 +1,94 @@
+﻿    @page "/books"
+    @inject RatingAPP.Data.ApplicationDbContext DB
+    @using RatingAPP.Data
+    @using Microsoft.EntityFrameworkCore;
+
+    <PageTitle>Create</PageTitle>
+
+    <h1>List of books</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <!--
+        <th>
+            <button @onclick="() => SortBooks('i')">Id</button>
+        </th>-->
+                <th>
+                    <button @onclick="() => SortBooks('t')">Title</button>
+                </th>
+                <th>
+                    <button @onclick="() => SortBooks('d')">Description</button>
+                </th>
+                <th>
+                    <button @onclick="() => SortBooks('a')">Author</button>
+                </th>
+                <!--<th>
+                    <button @onclick="() => SortBooks('r')">Date</button>
+                </th>-->
+                <th>
+                    <button @onclick="() => SortBooks('s')">Rate</button>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Books)
+            {
+                <tr>
+                    <!--<td>@item.Id</td>-->
+                    <td>
+                        <a href="@($"book/details?id={item.Id}")">@item.Title</a>
+                    </td>
+                    <td>@(item.Description.Length > 30 ? item.Description.Substring(0, 200) + "..." : item.Description)</td>
+                    <td>@item.Author</td>
+                    <!--<td>@item.RelaseDate?.ToShortDateString()</td>-->
+                            <td>@item.Rate.Value.ToString("F1")</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @code {
+                    [Inject]
+                    private ApplicationDbContext _context { get; set; }
+                    private string TruncatedDescription { get; set; }
+                    int SortDirection = 0;
+
+                    private Book[] Books { get; set; }
+
+                    protected override async Task OnInitializedAsync()
+                    {
+                        var booksList = await _context.Book.ToListAsync();
+                        Books = booksList.ToArray();
+                        await SortBooks('i');
+                    }
+
+                    private async Task SortBooks(char sortBy)
+                    {
+                        SortDirection = (SortDirection > 0) ? 0 : SortDirection + 1;
+                        switch (sortBy)
+                        {
+                            case 'i':
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.Id).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.Id).ToArrayAsync();
+                                break;
+                            case 't':
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.Title).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.Title).ToArrayAsync();
+                                break;
+                            case 'd':
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.Description).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.Description).ToArrayAsync();
+                                break;
+                            case 'a':
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.Author).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.Author).ToArrayAsync();
+                                break;
+                            case 'r':
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.RelaseDate).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.RelaseDate).ToArrayAsync();
+                                break;
+                            case 's':
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.Rate).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.Rate).ToArrayAsync();
+                                break;
+                            default:
+                                Books = (SortDirection > 0) ? await _context.Book.OrderBy(b => b.Id).ToArrayAsync() : await _context.Book.OrderByDescending(b => b.Id).ToArrayAsync();
+                                break;
+                        }
+                    }
+                }

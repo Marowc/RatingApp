@@ -1,0 +1,45 @@
+﻿@page "/comment"
+@inject RatingAPP.Data.ApplicationDbContext DB
+@using RatingAPP.Data
+@using Microsoft.EntityFrameworkCore;
+
+<PageTitle>Create</PageTitle>
+
+<h1>Index</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>id</th>
+            <th>bookid</th>
+            <th>userid</th>
+            <th>rate</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in comments)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.BookId</td>
+                <td>@item.UserId</td>
+                <td>@item.Rate</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Inject]
+    private ApplicationDbContext _context { get; set; }
+    private string TruncatedDescription { get; set; }
+    int SortDirection = 0;
+
+    private Comment[] comments { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var commentsList = await _context.Comment.ToListAsync();
+        comments = commentsList.ToArray();
+    }
+}

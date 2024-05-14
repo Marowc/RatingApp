@@ -1,0 +1,107 @@
+﻿@page "/book/details"
+@inject RatingAPP.Data.ApplicationDbContext DB
+@using RatingAPP.Data
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h4>Book</h4>
+    <hr />
+    @if (book is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <dl class="row">
+            <dt class="col-sm-2">Title</dt>
+            <dd class="col-sm-10">@book.Title</dd>
+            <dt class="col-sm-2">Description</dt>
+            <dd class="col-sm-10">@book.Description</dd>
+            <dt class="col-sm-2">Author</dt>
+            <dd class="col-sm-10">@book.Author</dd>
+            <dt class="col-sm-2">RelaseDate</dt>
+            <dd class="col-sm-10">@book.RelaseDate?.ToShortDateString()</dd>
+            <dt class="col-sm-2">Rate</dt>
+            <dd class="col-sm-10">@book.Rate.Value.ToString("F1")</dd>
+        </dl>
+        <AuthorizeView Context="authContext">
+            <EditForm method="post" Model="Comment" OnValidSubmit="AddComment" FormName="create" Enhance Context="formContext">
+                <div>
+                    <label for="rate" class="form-label">How do you rate this book?</label>
+                    <InputNumber id="rate" @bind-Value="Comment.Rate" class="form-control" style="width: 200px" min="0" max="10" />
+                    <ValidationMessage For="() => Comment.Rate" class="text-danger" />
+                    <input type="hidden" @bind="Comment.BookId" />
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </div>
+</EditForm>
+        </AuthorizeView>
+        <div class="mt-3">
+            <a href="@($"/book/edit?id={book.Id}")" class="btn btn-primary">Edit</a>
+            <a href="@($"/books")" class="btn btn-primary">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    AuthenticationState authenticationState;
+    Book? book;
+    int bookID = 0;
+    int NewRate { get; set; }
+    public Comment Comment { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        authenticationState = authState;
+
+        book = await DB.Book.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (book is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+        else bookID = book.Id;
+    }
+
+    public async Task<float?> CalculateAverageRatingForBookAsync(int bookId)
+    {
+        var comments = await DB.Comment.Where(c => c.BookId == bookId).ToListAsync();
+        if (comments.Any())
+        {
+            float? averageRating = comments.Select(c => c.Rate).Average();
+            return averageRating;
+            Console.WriteLine($"rate: {averageRating}");
+        }
+        else
+        {
+            return 0;
+            Console.WriteLine("return 0");
+        }
+    }
+
+    public async Task AddComment()
+    {
+        Comment.BookId = bookID;
+
+        DB.Comment.Add(Comment);
+        await DB.SaveChangesAsync();
+
+        var averageRating = await CalculateAverageRatingForBookAsync(bookID);
+
+        book.Rate = averageRating;
+        await DB.SaveChangesAsync();
+        NavigationManager.NavigateTo("/books");
+    }
+
+    }
